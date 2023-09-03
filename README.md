@@ -1,4 +1,4 @@
-# passport-sdk
+# WIP: passport-sdk
 
 Library for Wallets to use the Passport Network
 
@@ -6,16 +6,6 @@ Library for Wallets to use the Passport Network
 
 ```sh
 npm install passport-sdk
-```
-
-## Usage
-
-```js
-import { multiply } from 'passport-sdk';
-
-// ...
-
-const result = await multiply(3, 7);
 ```
 
 ## Contributing
@@ -28,4 +18,3 @@ MIT
 
 ---
 
-Made with [create-react-native-library](https://github.com/callstack/react-native-builder-bob)

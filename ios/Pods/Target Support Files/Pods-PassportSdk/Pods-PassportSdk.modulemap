@@ -1,0 +1,6 @@
+framework module Pods_PassportSdk {
+  umbrella header "Pods-PassportSdk-umbrella.h"
+
+  export *
+  module * { export * }
+}
