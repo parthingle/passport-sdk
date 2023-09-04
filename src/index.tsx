@@ -1,7 +1,7 @@
 import React from 'react';
-import { NativeModules, Platform, Alert } from 'react-native';
+import { NativeModules, Platform } from 'react-native';
 import { Button } from '@react-native-material/core';
-import NfcManager, { Ndef, NfcTech } from 'react-native-nfc-manager';
+import NfcManager, { NfcTech } from 'react-native-nfc-manager';
 
 const LINKING_ERROR =
   `The package 'passport-sdk' doesn't seem to be linked. Make sure: \n\n` +

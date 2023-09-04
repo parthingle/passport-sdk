@@ -1,5 +1,7 @@
 /* eslint-disable react-native/no-inline-styles */
 import * as React from 'react';
+import 'react-native-get-random-values';
+import '@ethersproject/shims';
 
 import { StyleSheet, View, Alert } from 'react-native';
 import { Balance } from './Components/Balance';
@@ -7,8 +9,6 @@ import { InitiListener, ListenForTag } from 'passport-sdk';
 import { Button } from '@react-native-material/core';
 
 export default function App() {
-
-
   React.useEffect(() => {
     async function init() {
       await InitiListener();
