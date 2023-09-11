@@ -1,36 +1,49 @@
 import React, { useState, useEffect } from 'react';
 import { Text } from '@react-native-material/core';
-// Import the crypto getRandomValues shim (**BEFORE** the shims)
 import 'react-native-get-random-values';
-
-// Import the the ethers shims (**BEFORE** ethers)
 import '@ethersproject/shims';
-
-// Import the ethers library
-import { ethers } from 'ethers';
+import { ethers, formatUnits } from 'ethers';
 import { View } from 'react-native';
 
-export function Balance() {
+const SimpleAccountWalletAddress =
+  '<Counterfactural Smart Contract Wallet Address>';
+
+type BalanceProps = {
+  provider: ethers.AlchemyProvider;
+  contract: ethers.Contract;
+};
+
+export function Balance(props: BalanceProps) {
   const [balance, setBalance] = useState('0');
 
   useEffect(() => {
-    getBalance();
-  }, []);
+    const interval = setInterval(async () => {
+      try {
+        if (props.provider === undefined) {
+          console.log('provider is undefined');
+          return;
+        }
 
-  const getBalance = async () => {
-    const provider = new ethers.JsonRpcProvider(
-      'https://rpc-mumbai.maticvigil.com',
-      80001
-    );
+        if (
+          props.contract === undefined ||
+          props.contract.decimals === undefined ||
+          props.contract.balanceOf === undefined
+        ) {
+          console.log('contract is undefined');
+          return;
+        }
 
-    const address = '0xD85FaDc9936A0069Ad68BD322e464EAd34d53583';
+        let decimals = await props.contract.decimals();
+        const b = await props.contract.balanceOf(SimpleAccountWalletAddress);
+        const res = formatUnits(b, decimals);
+        setBalance(res);
+      } catch (ex) {
+        console.log('Error: ', ex);
+      }
+    }, 1000); //set your time here.
 
-    const blockNum = await provider.getBlockNumber();
-
-    const bal = await provider.getBalance(address, blockNum);
-    console.log('Balance is: ', bal);
-    setBalance(ethers.formatEther(bal));
-  };
+    return () => clearInterval(interval);
+  }, [props.contract, props.provider]);
 
   return (
     <View>
@@ -44,7 +57,7 @@ export function Balance() {
           paddingBottom: 50,
         }}
       >
-        Your Balance: {balance} ETH
+        Your Balance: {balance} USDC
       </Text>
     </View>
   );

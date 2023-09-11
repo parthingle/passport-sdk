@@ -2,6 +2,11 @@ import React from 'react';
 import { NativeModules, Platform } from 'react-native';
 import { Button } from '@react-native-material/core';
 import NfcManager, { NfcTech } from 'react-native-nfc-manager';
+import 'react-native-get-random-values';
+import '@ethersproject/shims';
+import { ethers } from 'ethers';
+import { Wallet } from '@ethersproject/wallet';
+import { pay } from './payer';
 
 const LINKING_ERROR =
   `The package 'passport-sdk' doesn't seem to be linked. Make sure: \n\n` +
@@ -9,7 +14,7 @@ const LINKING_ERROR =
   '- You rebuilt the app after installing the package\n' +
   '- You are not using Expo Go\n';
 
-const PassportSdk = NativeModules.PassportSdk
+const PassportSdk = NativeModules.PassportSdåk
   ? NativeModules.PassportSdk
   : new Proxy(
       {},
@@ -32,7 +37,9 @@ export function Blob() {
 }
 
 interface Payment {
-  reference: string;
+  amount: string | undefined;
+  reference: string | undefined;
+  target: string | undefined;
 }
 
 export async function Init() {
@@ -51,11 +58,15 @@ export async function ListenForTag(): Promise<Payment> {
       !tag.ndefMessage.length ||
       !tag.ndefMessage[0]
     ) {
-      return { reference: 'tag not found' };
+      return { reference: 'tag not found', target: '', amount: '' };
     }
-
-    console.warn('Tag found', tag.ndefMessage[0].payload);
-    return { reference: decodeArray(tag.ndefMessage[0].payload) };
+    let payload = decodeArray(tag.ndefMessage[0].payload).split(':');
+    let res = {
+      amount: payload[1],
+      reference: payload[2],
+      target: payload[3],
+    };
+    return res;
   } catch (ex) {
     console.warn('Oops!', ex);
   } finally {
@@ -63,13 +74,36 @@ export async function ListenForTag(): Promise<Payment> {
     NfcManager.cancelTechnologyRequest();
   }
 
-  return { reference: 'tag not found' };
+  return { reference: 'tag not found', target: '', amount: '' };
+}
+
+export async function SubmitPayment(
+  owner: Wallet,
+  payment: Payment,
+  contract: ethers.Contract
+): Promise<string | undefined> {
+  try {
+    if (payment.target === undefined || payment.amount === undefined) {
+      return Promise.reject('Payment is undefined');
+    }
+    let res = await pay(payment.target, payment.amount, owner, contract, {
+      withPM: true,
+      dryRun: false,
+    });
+    console.log(
+      `Successfully spent $${payment.amount} at ${payment.reference}`
+    );
+    return Promise.resolve(res);
+  } catch (ex) {
+    console.warn('Oops!', ex);
+  }
+  return Promise.reject('Payment failed');
 }
 
 export async function InitiListener() {
   try {
-    const nfc = NfcManager.start();
-    console.log('start OK', nfc);
+    NfcManager.start();
+    console.log('start OK');
   } catch (e) {
     console.warn('start fail', e);
   }
