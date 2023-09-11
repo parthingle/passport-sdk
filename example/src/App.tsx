@@ -2,11 +2,35 @@
 import * as React from 'react';
 import 'react-native-get-random-values';
 import '@ethersproject/shims';
-
+import { ethers } from 'ethers';
+import { Wallet } from '@ethersproject/wallet';
 import { StyleSheet, View, Alert } from 'react-native';
 import { Balance } from './Components/Balance';
-import { InitiListener, ListenForTag } from 'passport-sdk';
+import { InitiListener, ListenForTag, SubmitPayment } from 'passport-sdk';
 import { Button } from '@react-native-material/core';
+
+const ALCHEMY_API_KEY = '<ALCHEMY API KEY>';
+// Contract Instance
+const usdcContractAddress = '0x2791bca1f2de4661ed88a30c99a7a9449aa84174';
+const abi = [
+  // Read-Only Functions
+  'function balanceOf(address owner) view returns (uint256)',
+  'function decimals() view returns (uint8)',
+  'function symbol() view returns (string)',
+
+  // Authenticated Functions
+  'function transfer(address to, uint amount) returns (bool)',
+
+  // Events
+  'event Transfer(address indexed from, address indexed to, uint amount)',
+];
+
+const contract = new ethers.Contract(
+  usdcContractAddress,
+  abi,
+  new ethers.AlchemyProvider(137, ALCHEMY_API_KEY)
+);
+const provider = new ethers.AlchemyProvider(137, ALCHEMY_API_KEY);
 
 export default function App() {
   React.useEffect(() => {
@@ -18,17 +42,20 @@ export default function App() {
 
   return (
     <View style={styles.container}>
-      <Balance />
+      <Balance provider={provider} contract={contract} />
 
       <Button
         title="Scan for Payment"
         style={{ alignSelf: 'center', marginTop: 40 }}
         onPress={() => {
           ListenForTag().then((payment) => {
-            Alert.alert('Payment', parsePayment(payment.reference), [
+            console.log('payment', payment);
+            Alert.alert('Payment', parsePayment(payment), [
               {
                 text: 'Confirm',
-                onPress: () => console.log('Confirm Pressed'),
+                onPress: async () => {
+                  await submitPayment(payment);
+                },
               },
               {
                 text: 'Cancel',
@@ -43,9 +70,9 @@ export default function App() {
   );
 }
 
-function parsePayment(payment: string): string {
-  let parts = payment.split(':');
-  return 'Confirm payment of ' + parts[1] + ' at ' + parts[2];
+function parsePayment(payment: any): string {
+  console.log(payment);
+  return 'Confirm payment of ' + payment.amount + ' at ' + payment.reference;
 }
 
 const styles = StyleSheet.create({
@@ -53,6 +80,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: '#fffffa',
   },
   box: {
     width: 60,
@@ -60,3 +88,16 @@ const styles = StyleSheet.create({
     marginVertical: 20,
   },
 });
+
+async function submitPayment(payment: any) {
+  console.log('Payment Start Time', new Date().toTimeString());
+  if (payment === undefined) {
+    return;
+  }
+  console.log('start time', new Date().toTimeString());
+  console.log('payment', payment.target, payment.amount);
+  let pkey = '<PRIVATE KEY>';
+  const signer = new Wallet(pkey);
+  await SubmitPayment(signer, payment, contract);
+  console.log('Payment End Time', new Date().toTimeString());
+}
